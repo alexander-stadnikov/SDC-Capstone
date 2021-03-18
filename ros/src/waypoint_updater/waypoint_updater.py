@@ -1,25 +1,12 @@
 #!/usr/bin/env python
 
 import rospy
+import numpy as np
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import KDTree
 
 import math
-
-'''
-This node will publish waypoints from the car's current position to some `x` distance ahead.
-
-As mentioned in the doc, you should ideally first implement a version which does not care
-about traffic lights or obstacles.
-
-Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-
-Please note that our simulator also provides the exact location of traffic lights and their
-current status in `/vehicle/traffic_lights` message. You can use this message to build this node
-as well as to verify your TL classifier.
-
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
-'''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
@@ -36,17 +23,52 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        self.baseWp = None
+        self.wp2D = None
+        self.wpTree = None
+        self.pose = None
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        rate = rospy.Rate(50)
+        while not rospy.is_shutdown():
+            if self.pose and self.baseWp:
+                idx = self.get_closest_waypoint_idx()
+                self.publish_waypoints(idx)
+            rate.sleep()
+
+    def get_closest_waypoint_idx(self):
+        pos = self.pose.pose.position
+        x, y = pos.x, pos.y
+        closestIdx = self.wpTree.query([x, y], 1)[1]
+        
+        coord = self.wp2D[closestIdx]
+        prev = self.wp2D[closestIdx - 1]
+        
+        coord = np.array(coord)
+        prev = np.array(prev)
+        pos = np.array([x, y])
+
+        v = np.dot(coord - prev, pos - coord)
+
+        return (closestIdx + 1) % len(self.wp2D) if v > 0 else closestIdx
+
+    def publish_waypoints(self, closestIdx):
+        lane = Lane()
+        lane.header = self.baseWp.header
+        lane.waypoints = self.baseWp.waypoints[closestIdx:closestIdx + LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        self.pose = msg
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.baseWp = waypoints
+        if not self.wp2D:
+            self.wp2D = [[wp.pose.pose.position.x, wp.pose.pose.position.y] for wp in waypoints.waypoints]
+            self.wpTree = KDTree(self.wp2D)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
