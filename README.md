@@ -2,6 +2,10 @@
 
 The final project for the Udacity Self-Driving Car Engineer Nanodegree.  The goal of the project is the System Integration of several ROS nodes. The car must safely drive along the route and correctly react on traffic lights.
 
+[**Full video:**](https://www.youtube.com/watch?v=QpeepKenmyk)
+
+![alt](./capstone.gif)
+
 ### The Car Architecture
 ![alt](./arch.png)
 ## Setup
@@ -45,12 +49,12 @@ To set up port forwarding, please refer to the [instructions from term 2](https:
 
 1. Clone the project repository
 ```bash
-git clone https://github.com/udacity/CarND-Capstone.git
+git clone https://github.com/alexander-stadnikov/SDC-Capstone.git
 ```
 
 2. Install python dependencies
 ```bash
-cd CarND-Capstone
+cd SDC-Capstone
 pip install -r requirements.txt
 ```
 3. Make and run styx
